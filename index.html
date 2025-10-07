@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fluent Quiz Challenge Day3</title>
+  <style>
+    :root{
+      --bg:#ffdee9;
+      --primary:#ff1493;
+      --accent1:#ff8da1;
+      --accent2:#ffd37e;
+      --card:#ffffff;
+      --muted:#6b6b6b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(135deg,var(--bg),#ffeef6 40%);
+      display:flex;align-items:center;justify-content:center;padding:32px;
+    }
+    .container{width:100%;max-width:920px;background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.85));border-radius:18px;box-shadow:0 10px 40px rgba(17,17,17,0.12);overflow:hidden;border:4px solid rgba(255,20,147,0.06);}
+    header{display:flex;align-items:center;gap:16px;padding:20px 28px;background:linear-gradient(90deg,var(--primary),var(--accent1));color:white}
+    .brand{font-weight:700;font-size:1.2rem;letter-spacing:0.6px}
+    .sub{opacity:0.95;font-weight:600;font-size:.9rem}
+    main{padding:28px}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .bar{width:100%;height:10px;background:linear-gradient(90deg,#ffe6f0,#fff);border-radius:999px;overflow:hidden}
+    .bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--accent2));border-radius:999px;transition:width .55s cubic-bezier(.2,.9,.3,1)}
+    .question-card{position:relative;background:var(--card);padding:28px;border-radius:12px;min-height:180px;overflow:hidden}
+    .q-stage{position:relative;height:100%}
+    .q{position:absolute;top:0;left:0;right:0;opacity:0;transform:translateX(8px) scale(.995);transition:transform .45s cubic-bezier(.2,.9,.3,1),opacity .45s ease;pointer-events:none}
+    .q.active{opacity:1;transform:translateX(0) scale(1);pointer-events:auto}
+    .opt{background:linear-gradient(180deg,#fff,#fff);border:2px solid rgba(255,20,147,0.06);padding:12px;border-radius:10px;cursor:pointer;user-select:none;transition:transform .18s ease,box-shadow .18s ease}
+    .opt:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(255,20,147,0.06)}
+    .opt.correct{background:linear-gradient(180deg,#f0fff0,#e8fff2);border-color:#34a853}
+    .opt.wrong{background:linear-gradient(180deg,#fff0f0,#ffecec);border-color:#d9534f}
+    .controls{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+    .btn{background:var(--primary);color:white;border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(255,20,147,0.12)}
+    footer{padding:14px 28px;background:linear-gradient(90deg, rgba(255,20,147,0.04), rgba(255,141,161,0.03));display:flex;justify-content:space-between;align-items:center}
+    .score{font-weight:700;color:var(--primary)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">Fluent Quiz Challenge — Day 3</div>
+      <div class="sub">Deep Pink Theme • Confetti + Sound FX</div>
+    </header>
+    <main>
+      <div class="meta">
+        <div style="flex:1;margin-right:18px"><div class="bar"><i id="progress"></i></div></div>
+        <div style="min-width:160px;text-align:right"><div style="font-size:.92rem;color:var(--muted)">Question</div><div style="font-weight:800;font-size:1.05rem" id="qcount">1 / 10</div></div>
+      </div>
+      <div class="question-card"><div class="q-stage" id="qstage"></div>
+        <div class="controls"><button class="btn" id="check">Check</button><button class="btn" id="next">Next →</button></div>
+      </div>
+    </main>
+    <footer><div class="score" id="score">Score: 0</div><div style="font-size:0.9rem;color:var(--muted)">Fluent quiz challenge • Have fun!</div></footer>
+  </div>
+
+  <canvas id="confettiCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10"></canvas>
+  <audio id="correctSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_23f9827398.mp3?filename=correct-2-46134.mp3"></audio>
+  <audio id="wrongSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_471e4a7db3.mp3?filename=error-2-126514.mp3"></audio>
+
+  <script>
+    const questions=[{q:"What is Fluent described as in its Getting Started page?",opts:["A traditional single-VM blockchain","A blended execution network combining multiple VMs","A centralized database solution","A peer-to-peer file storage system"],a:1}];
+    let idx=0,state={score:0};const qstage=document.getElementById('qstage');const progress=document.getElementById('progress');const qcount=document.getElementById('qcount');const scoreEl=document.getElementById('score');
+    function renderQuestion(i){const item=questions[i];qstage.innerHTML=`<div class='q active'><h2>${item.q}</h2><div>${item.opts.map((o,oi)=>`<div class='opt' data-idx='${oi}'>${o}</div>`).join('')}</div></div>`;qcount.textContent=`${i+1} / ${questions.length}`;progress.style.width=`${(i/questions.length)*100}%`;qstage.querySelectorAll('.opt').forEach(el=>el.onclick=()=>select(i,Number(el.dataset.idx),el));}
+    function select(qi,opt,el){qstage.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');state.sel=opt;}
+    document.getElementById('check').onclick=()=>{const correct=questions[idx].a;if(state.sel==null)return;const opts=qstage.querySelectorAll('.opt');opts.forEach((o,oi)=>{o.classList.remove('correct','wrong');if(oi===correct)o.classList.add('correct');if(state.sel===oi&&oi!==correct)o.classList.add('wrong');});if(state.sel===correct){state.score++;scoreEl.textContent=`Score: ${state.score}`;document.getElementById('correctSound').play();launchConfetti();}else document.getElementById('wrongSound').play();};
+    document.getElementById('next').onclick=()=>{if(idx<questions.length-1){idx++;renderQuestion(idx);}else alert(`Quiz finished! Score ${state.score}`)};
+    renderQuestion(0);
+
+    // Confetti animation
+    const confettiCanvas=document.getElementById('confettiCanvas');const ctx=confettiCanvas.getContext('2d');let confettis=[];function resize(){confettiCanvas.width=window.innerWidth;confettiCanvas.height=window.innerHeight;}window.addEventListener('resize',resize);resize();
+    function launchConfetti(){for(let i=0;i<150;i++){confettis.push({x:Math.random()*confettiCanvas.width,y:Math.random()*-50,dx:Math.random()*4-2,dy:Math.random()*3+2,size:Math.random()*6+4,color:`hsl(${Math.random()*360},100%,70%)`,life:100+Math.random()*50});}}
+    function draw(){ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);confettis.forEach((p,i)=>{ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--;if(p.life<0)confettis.splice(i,1);});requestAnimationFrame(draw);}draw();
+  </script>
+</body>
+</html>
